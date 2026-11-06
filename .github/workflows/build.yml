@@ -3,32 +3,24 @@ name: Build iOS Dylib
 on:
   push:
     branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: macos-latest
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-    - name: Setup Theos & Dependencies
+    - name: Compile Dylib for iOS (arm64)
       run: |
-        brew install ldid
-        sudo mkdir -p /opt/theos
-        sudo chown -R $USER /opt/theos
-        git clone --recursive https://github.com/theos/theos.git /opt/theos
+        xcrun -sdk iphoneos clang -arch arm64 -fobjc-arc -dynamiclib main.mm -o libRobloxNeon.dylib -framework UIKit -framework WebKit -framework Foundation -framework QuartzCore -framework CoreGraphics -lc++
 
-    - name: Build Tweak (.dylib)
-      env:
-        THEOS: /opt/theos
-      run: |
-        make package
+        echo "Compilation completed successfully!"
 
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v3
+    - name: Upload compiled Dylib
+      uses: actions/upload-artifact@v4
       with:
-        name: CocCocAI-dylib
-        path: .theos/_/Library/MobileSubstrate/DynamicLibraries/*.dylib
+        name: skibidotoiletAI
+        path: skibiditoiletAI.dylib
