@@ -1,0 +1,34 @@
+name: Build iOS Dylib
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Setup Theos & Dependencies
+      run: |
+        brew install ldid
+        sudo mkdir -p /opt/theos
+        sudo chown -R $USER /opt/theos
+        git clone --recursive https://github.com/theos/theos.git /opt/theos
+
+    - name: Build Tweak (.dylib)
+      env:
+        THEOS: /opt/theos
+      run: |
+        make package
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: CocCocAI-dylib
+        path: .theos/_/Library/MobileSubstrate/DynamicLibraries/*.dylib
