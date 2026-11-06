@@ -3,24 +3,23 @@ name: Build iOS Dylib
 on:
   push:
     branches: [ main, master ]
-  workflow_dispatch:
+  pull_request:
+    branches: [ main, master ]
 
 jobs:
   build:
     runs-on: macos-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    - name: Checkout Code
+      uses: actions/checkout@v3
 
     - name: Compile Dylib for iOS (arm64)
       run: |
-        xcrun -sdk iphoneos clang -arch arm64 -fobjc-arc -dynamiclib main.mm -o libRobloxNeon.dylib -framework UIKit -framework WebKit -framework Foundation -framework QuartzCore -framework CoreGraphics -lc++
+        xcrun -sdk iphoneos clang -arch arm64 -fobjc-arc -dynamiclib main.mm -o skibiditoiletAI.dylib -framework UIKit -framework Foundation -framework QuartzCore -framework CoreGraphics -lc++
 
-        echo "Compilation completed successfully!"
-
-    - name: Upload compiled Dylib
-      uses: actions/upload-artifact@v4
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v3
       with:
-        name: skibidotoiletAI
+        name: skibiditoiletAI-dylib
         path: skibiditoiletAI.dylib
