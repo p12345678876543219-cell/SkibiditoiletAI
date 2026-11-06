@@ -14,6 +14,25 @@ void toggleFloatButton(BOOL show);
 void captureAndAnalyzeScreen();
 void showResultPopup(NSString *text, BOOL isLoading);
 
+// Helper lấy UIWindow an toàn trên iOS hiện đại
+UIWindow *getSafestKeyWindow() {
+    UIWindow *foundWindow = nil;
+    for (UIWindowScene *scene in [UIApplication sharedApplication].connectedScenes) {
+        if ([scene isKindOfClass:[UIWindowScene class]]) {
+            for (UIWindow *win in scene.windows) {
+                if (win.isKeyWindow) {
+                    foundWindow = win;
+                    break;
+                }
+            }
+        }
+    }
+    if (!foundWindow) {
+        foundWindow = [UIApplication sharedApplication].keyWindow;
+    }
+    return foundWindow;
+}
+
 // Gesture Helper cho 3 lần chạm màn hình
 @interface TweakGestureHelper : NSObject
 + (instancetype)sharedInstance;
@@ -36,7 +55,7 @@ void showResultPopup(NSString *text, BOOL isLoading);
 }
 @end
 
-// Pan Helper để kéo nút "Chụp" di chuyển trên màn hình
+// Pan Helper để kéo nút "Chụp" di chuyển
 @interface FloatButtonPanHelper : NSObject
 @property (nonatomic, assign) CGPoint startPoint;
 @end
@@ -54,21 +73,21 @@ void showResultPopup(NSString *text, BOOL isLoading);
 
 static FloatButtonPanHelper *panHelper = nil;
 
-// Khai báo trước các hàm selector để tránh warning
+// Khai báo trước các hàm selector
 void captureAction();
 void switchChanged(UISwitch *sender);
 void saveApiKeyAction();
 void closeMenuAction();
 void closeResultAction();
 
-// Tạo Nút Chụp nổi trên màn hình
+// Tạo Nút Chụp nổi
 void toggleFloatButton(BOOL show) {
     dispatch_async(dispatch_get_main_queue(), ^{
+        UIWindow *keyWindow = getSafestKeyWindow();
+        if (!keyWindow) return;
+        
         if (show) {
             if (!floatCaptureBtn) {
-                UIWindow *keyWindow = [UIApplication sharedApplication].windows.firstObject;
-                if (!keyWindow) return;
-                
                 floatCaptureBtn = [UIButton buttonWithType:UIButtonTypeCustom];
                 floatCaptureBtn.frame = CGRectMake(keyWindow.bounds.size.width - 80, 150, 65, 65);
                 floatCaptureBtn.backgroundColor = [UIColor colorWithRed:0.0 green:0.55 blue:1.0 alpha:0.9];
@@ -106,7 +125,7 @@ void captureAction() {
 void createMenuUI() {
     if (menuWindow) return;
     
-    UIWindow *keyWindow = [UIApplication sharedApplication].windows.firstObject;
+    UIWindow *keyWindow = getSafestKeyWindow();
     if (!keyWindow) return;
     
     menuWindow = [[UIWindow alloc] initWithFrame:keyWindow.bounds];
@@ -184,7 +203,7 @@ void saveApiKeyAction() {
     [defaults synchronize];
     
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Thành công" message:@"Đã lưu Gemini API Key!" preferredStyle:UIAlertControllerStyleAlert];
-    UIWindow *rootWin = [UIApplication sharedApplication].windows.firstObject;
+    UIWindow *rootWin = getSafestKeyWindow();
     [rootWin.rootViewController presentViewController:alert animated:YES completion:nil];
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         [alert dismissViewControllerAnimated:YES completion:nil];
@@ -209,7 +228,7 @@ void toggleMenu() {
 
 void showResultPopup(NSString *text, BOOL isLoading) {
     dispatch_async(dispatch_get_main_queue(), ^{
-        UIWindow *keyWindow = [UIApplication sharedApplication].windows.firstObject;
+        UIWindow *keyWindow = getSafestKeyWindow();
         if (!keyWindow) return;
         
         if (!resultContainer) {
@@ -251,7 +270,7 @@ void closeResultAction() {
 }
 
 void captureAndAnalyzeScreen() {
-    UIWindow *keyWindow = [UIApplication sharedApplication].windows.firstObject;
+    UIWindow *keyWindow = getSafestKeyWindow();
     if (!keyWindow) return;
     
     UIGraphicsBeginImageContextWithOptions(keyWindow.bounds.size, NO, [UIScreen mainScreen].scale);
@@ -342,17 +361,19 @@ void captureAndAnalyzeScreen() {
     [task resume];
 }
 
-// Hàm khởi tạo thay thế cho %ctor để chạy mượt mà trên tệp .mm
+// Lắng nghe thông báo app chạy xong để gắn gesture an toàn tuyệt đối
 __attribute__((constructor)) static void entry() {
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        UIWindow *keyWindow = [UIApplication sharedApplication].windows.firstObject;
-        if (keyWindow) {
-            UITapGestureRecognizer *tripleTap = [[UITapGestureRecognizer alloc] initWithTarget:[TweakGestureHelper sharedInstance] action:@selector(handleTripleTap:)];
-            tripleTap.numberOfTapsRequired = 3;
-            tripleTap.numberOfTouchesRequired = 1;
-            [keyWindow addGestureRecognizer:tripleTap];
-            
-            toggleFloatButton(YES);
-        }
-    });
+    [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidFinishLaunchingNotification object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification *note) {
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            UIWindow *keyWindow = getSafestKeyWindow();
+            if (keyWindow) {
+                UITapGestureRecognizer *tripleTap = [[UITapGestureRecognizer alloc] initWithTarget:[TweakGestureHelper sharedInstance] action:@selector(handleTripleTap:)];
+                tripleTap.numberOfTapsRequired = 3;
+                tripleTap.numberOfTouchesRequired = 1;
+                [keyWindow addGestureRecognizer:tripleTap];
+                
+                toggleFloatButton(YES);
+            }
+        });
+    }];
 }
