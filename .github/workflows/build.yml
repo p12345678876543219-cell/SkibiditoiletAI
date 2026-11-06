@@ -19,7 +19,7 @@ jobs:
         xcrun -sdk iphoneos clang -arch arm64 -fobjc-arc -dynamiclib main.mm -o skibiditoiletAI.dylib -framework UIKit -framework Foundation -framework QuartzCore -framework CoreGraphics -lc++
 
     - name: Upload Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: skibiditoiletAI-dylib
         path: skibiditoiletAI.dylib
