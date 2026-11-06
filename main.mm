@@ -54,12 +54,19 @@ void showResultPopup(NSString *text, BOOL isLoading);
 
 static FloatButtonPanHelper *panHelper = nil;
 
-// Tạo nút Chụp nổi trên màn hình
+// Khai báo trước các hàm selector để tránh warning
+void captureAction();
+void switchChanged(UISwitch *sender);
+void saveApiKeyAction();
+void closeMenuAction();
+void closeResultAction();
+
+// Tạo Nút Chụp nổi trên màn hình
 void toggleFloatButton(BOOL show) {
     dispatch_async(dispatch_get_main_queue(), ^{
         if (show) {
             if (!floatCaptureBtn) {
-                UIWindow *keyWindow = [[UIApplication sharedApplication] keyWindow];
+                UIWindow *keyWindow = [UIApplication sharedApplication].windows.firstObject;
                 if (!keyWindow) return;
                 
                 floatCaptureBtn = [UIButton buttonWithType:UIButtonTypeCustom];
@@ -91,7 +98,6 @@ void toggleFloatButton(BOOL show) {
     });
 }
 
-// Hành động khi bấm nút Chụp
 void captureAction() {
     captureAndAnalyzeScreen();
 }
@@ -100,7 +106,7 @@ void captureAction() {
 void createMenuUI() {
     if (menuWindow) return;
     
-    UIWindow *keyWindow = [[UIApplication sharedApplication] keyWindow];
+    UIWindow *keyWindow = [UIApplication sharedApplication].windows.firstObject;
     if (!keyWindow) return;
     
     menuWindow = [[UIWindow alloc] initWithFrame:keyWindow.bounds];
@@ -108,7 +114,6 @@ void createMenuUI() {
     menuWindow.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.5];
     menuWindow.hidden = NO;
     
-    // Panel chứa Menu
     menuView = [[UIView alloc] initWithFrame:CGRectMake(40, 100, keyWindow.bounds.size.width - 80, 360)];
     menuView.backgroundColor = [UIColor colorWithRed:0.12 green:0.12 blue:0.15 alpha:0.95];
     menuView.layer.cornerRadius = 20;
@@ -116,7 +121,6 @@ void createMenuUI() {
     menuView.layer.borderColor = [UIColor colorWithRed:0.3 green:0.3 blue:0.3 alpha:1.0].CGColor;
     [menuWindow addSubview:menuView];
     
-    // Tiêu đề
     UILabel *titleLbl = [[UILabel alloc] initWithFrame:CGRectMake(20, 20, menuView.bounds.size.width - 40, 30)];
     titleLbl.text = @"Cốc Cốc AI Assistant";
     titleLbl.textColor = [UIColor whiteColor];
@@ -124,7 +128,6 @@ void createMenuUI() {
     titleLbl.textAlignment = NSTextAlignmentCenter;
     [menuView addSubview:titleLbl];
     
-    // Ô nhập API Key
     apiKeyField = [[UITextField alloc] initWithFrame:CGRectMake(20, 70, menuView.bounds.size.width - 40, 44)];
     apiKeyField.backgroundColor = [UIColor colorWithRed:0.2 green:0.2 blue:0.25 alpha:1.0];
     apiKeyField.textColor = [UIColor whiteColor];
@@ -134,13 +137,11 @@ void createMenuUI() {
     apiKeyField.leftView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 10, 44)];
     apiKeyField.leftViewMode = UITextFieldViewModeAlways;
     
-    // Đọc API Key đã lưu trước đó nếu có
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     NSString *savedKey = [defaults stringForKey:@"GeminiAPIKey"];
     if (savedKey) apiKeyField.text = savedKey;
     [menuView addSubview:apiKeyField];
     
-    // Switch bật/tắt nút Chụp
     UILabel *switchLbl = [[UILabel alloc] initWithFrame:CGRectMake(20, 130, menuView.bounds.size.width - 100, 30)];
     switchLbl.text = @"Hiện nút nổi 'CHỤP'";
     switchLbl.textColor = [UIColor whiteColor];
@@ -152,7 +153,6 @@ void createMenuUI() {
     [toggleSwitch addTarget:nil action:@selector(switchChanged:) forControlEvents:UIControlEventValueChanged];
     [menuView addSubview:toggleSwitch];
     
-    // Nút Lưu API Key
     UIButton *saveBtn = [UIButton buttonWithType:UIButtonTypeSystem];
     saveBtn.frame = CGRectMake(20, 185, menuView.bounds.size.width - 40, 44);
     saveBtn.backgroundColor = [UIColor colorWithRed:0.0 green:0.47 blue:1.0 alpha:1.0];
@@ -163,7 +163,6 @@ void createMenuUI() {
     [saveBtn addTarget:nil action:@selector(saveApiKeyAction) forControlEvents:UIControlEventTouchUpInside];
     [menuView addSubview:saveBtn];
     
-    // Nút Đóng Menu
     UIButton *closeBtn = [UIButton buttonWithType:UIButtonTypeSystem];
     closeBtn.frame = CGRectMake(20, 245, menuView.bounds.size.width - 40, 44);
     closeBtn.backgroundColor = [UIColor colorWithRed:0.8 green:0.2 blue:0.2 alpha:1.0];
@@ -175,7 +174,6 @@ void createMenuUI() {
     [menuView addSubview:closeBtn];
 }
 
-// Selector helper actions
 void switchChanged(UISwitch *sender) {
     toggleFloatButton(sender.isOn);
 }
@@ -185,9 +183,8 @@ void saveApiKeyAction() {
     [defaults setObject:apiKeyField.text forKey:@"GeminiAPIKey"];
     [defaults synchronize];
     
-    // Toast thông báo đã lưu
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Thành công" message:@"Đã lưu Gemini API Key!" preferredStyle:UIAlertControllerStyleAlert];
-    UIWindow *rootWin = [[UIApplication sharedApplication] keyWindow];
+    UIWindow *rootWin = [UIApplication sharedApplication].windows.firstObject;
     [rootWin.rootViewController presentViewController:alert animated:YES completion:nil];
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         [alert dismissViewControllerAnimated:YES completion:nil];
@@ -210,10 +207,9 @@ void toggleMenu() {
     }
 }
 
-// Hiển thị Popup kết quả đáp án từ Gemini
 void showResultPopup(NSString *text, BOOL isLoading) {
     dispatch_async(dispatch_get_main_queue(), ^{
-        UIWindow *keyWindow = [[UIApplication sharedApplication] keyWindow];
+        UIWindow *keyWindow = [UIApplication sharedApplication].windows.firstObject;
         if (!keyWindow) return;
         
         if (!resultContainer) {
@@ -254,9 +250,8 @@ void closeResultAction() {
     }
 }
 
-// Chụp màn hình và gửi API đến Gemini
 void captureAndAnalyzeScreen() {
-    UIWindow *keyWindow = [[UIApplication sharedApplication] keyWindow];
+    UIWindow *keyWindow = [UIApplication sharedApplication].windows.firstObject;
     if (!keyWindow) return;
     
     UIGraphicsBeginImageContextWithOptions(keyWindow.bounds.size, NO, [UIScreen mainScreen].scale);
@@ -272,13 +267,12 @@ void captureAndAnalyzeScreen() {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     NSString *apiKey = [defaults stringForKey:@"GeminiAPIKey"];
     if (!apiKey || apiKey.length == 0) {
-        showResultPopup(@"Lỗi: Chưa nhập Gemini API Key!\nHãy chạm 3 lần vào màn hình để mở menu cài đặt và nhập API Key của bạn.", NO);
+        showResultPopup(@"Lỗi: Chưa nhập Gemini API Key!\nHãy chạm 3 lần vào màn hình để mở menu cài đặt.", NO);
         return;
     }
     
     showResultPopup(@"Đang gửi ảnh màn hình cho AI Gemini phân tích...", YES);
     
-    // Sử dụng model gemini-1.5-flash để phân tích hình ảnh nhanh chóng và chính xác
     NSString *urlString = [NSString stringWithFormat:@"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=%@", apiKey];
     NSURL *url = [NSURL URLWithString:urlString];
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
@@ -348,17 +342,16 @@ void captureAndAnalyzeScreen() {
     [task resume];
 }
 
-// Khởi tạo Tweak khi ứng dụng khởi chạy
-%ctor {
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        UIWindow *keyWindow = [[UIApplication sharedApplication] keyWindow];
+// Hàm khởi tạo thay thế cho %ctor để chạy mượt mà trên tệp .mm
+__attribute__((constructor)) static void entry() {
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        UIWindow *keyWindow = [UIApplication sharedApplication].windows.firstObject;
         if (keyWindow) {
             UITapGestureRecognizer *tripleTap = [[UITapGestureRecognizer alloc] initWithTarget:[TweakGestureHelper sharedInstance] action:@selector(handleTripleTap:)];
             tripleTap.numberOfTapsRequired = 3;
             tripleTap.numberOfTouchesRequired = 1;
             [keyWindow addGestureRecognizer:tripleTap];
             
-            // Mặc định hiển thị nút chụp khi khởi động
             toggleFloatButton(YES);
         }
     });
