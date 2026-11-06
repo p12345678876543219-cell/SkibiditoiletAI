@@ -1,0 +1,9 @@
+Package: com.ai.coccocassistant
+Name: CocCocAI Assistant
+Depends: mobilesubstrate
+Version: 1.0.0
+Architecture: iphoneos-arm
+Maintainer: Developer
+Author: Developer
+Section: Tweaks
+Description: Tweak tích hợp AI Gemini để chụp màn hình và giải bài tập trên Cốc Cốc.
